@@ -1,0 +1,81 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:android)
+
+platform :android do
+    desc "Build"
+    lane :build do
+      gradle(
+        task: "assemble",
+        # flavor: "demo",
+        build_type: "Release"
+      )
+     end
+
+  desc "Runs all the tests"
+  lane :test do
+    gradle(task: "test")
+  end
+
+  desc "Build debug and test APK for screenshots. Then Capture Screenshots Automatically"
+  lane :grab_screens do
+    gradle(
+        task: "clean"
+    )
+    gradle(
+        task: "assemble",
+        build_type: "Debug"
+    )
+    gradle(
+        task: "assemble",
+        build_type: "AndroidTest"
+    )
+    screengrab
+  end
+
+  desc "Submit a new Beta Build to Firebase App Distribution"
+  lane :beta do
+    build
+    firebase_app_distribution(
+         app: "1:201732336243:android:cd138ab00ba26476a1d806",
+         groups: "group-test",
+         release_notes: "Lots of amazing new features to test out!"
+    )
+
+  end
+
+  desc "Increment version codeC"
+   lane :increment_vc do
+   increment_version_code(
+         gradle_file_path: "./app/build.gradle",
+   )
+   end
+
+  desc "Build release app bundle"
+   lane :build_bundle do
+       gradle(task: "clean bundleRelease")
+   end
+
+  desc "Deploy a new version to the Google Play"
+  lane :deploy do
+     # The lane you created previously to increment your app’s `version code`.
+     increment_vc
+     # The build release app bundle lane you created previously.
+     build_bundle
+      # Uploads Android App Bundle to Play Console.
+     upload_to_play_store(release_status:"draft")
+  end
+end
